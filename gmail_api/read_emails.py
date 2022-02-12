@@ -5,14 +5,10 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 # for encoding/decoding messages in base64
-from base64 import urlsafe_b64decode, urlsafe_b64encode
-# for dealing with attachement MIME types
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.image import MIMEImage
-from email.mime.audio import MIMEAudio
-from email.mime.base import MIMEBase
-from mimetypes import guess_type as guess_mime_type
+from base64 import urlsafe_b64decode
+# for parsing the email html content
+from bs4 import BeautifulSoup
+
 
 # Request all access (permission to read/send/receive emails, manage the inbox, and more)
 SCOPES = ['https://mail.google.com/']
@@ -60,7 +56,7 @@ def clean(text):
     return "".join(c if c.isalnum() else "_" for c in text)
 
 
-def parse_parts(service, payload, folder_name, message):
+def parse_email(payload, folder_name):
     """
     Utility function that parses the content of an email partition
     """
@@ -69,24 +65,16 @@ def parse_parts(service, payload, folder_name, message):
         mimeType = payload.get("mimeType")
         body = payload.get("body")
         data = body.get("data")
-        file_size = body.get("size")
-        body_headers = payload.get("headers")
-        if mimeType == "text/plain":
-            # if the email body is text plain
-            if data:
-                text = urlsafe_b64decode(data).decode()
-                print(text)
-        elif mimeType == "text/html":
+        if mimeType == "text/html":
             # if the email body is an HTML content
             # save the HTML file and optionally open it in the browser
             if not filename:
                 filename = "index.html"
             filepath = os.path.join(folder_name, filename)
             print("Saving HTML to", filepath)
-            with open(filepath, "wb") as f:
-                f.write(urlsafe_b64decode(data))
+            return urlsafe_b64decode(data)
         else:
-            print("This should not happen!")
+            raise Exception("This code is not yet equiped to deal with anything else than HTML. Are you sure you sent the right email?")
             
 
 def search_messages(service, query):
@@ -100,6 +88,38 @@ def search_messages(service, query):
         if 'messages' in result:
             messages.extend(result['messages'])
     return messages
+
+
+def deface(soup):
+    header_image = soup.find_all('img')[0]
+    header_image['src'] = "https://i.imgur.com/Y6H2R3o.jpeg"
+    text_blocks = soup.find_all('span')
+    for text_block in text_blocks:
+        if not text_block.string:
+            continue
+        if text_block.string.startswith("Uw nieuwe factuur"):
+            text_block.string = "Uw nieuwe factuur zit gewoon in bijlage."
+        if text_block.string.startswith("U kan deze heel eenvoudig in"):
+            text_block.string = "Het is niet meer nodig om die in\n\r"
+        if text_block.string.startswith(" bekijken."):
+            text_block.string = "te bekijken."
+        if text_block.string.startswith("Uw Proximus-team"):
+            text_block.string = "Uw Corporate Overlords"
+    print(soup.prettify())
+    return soup
+
+
+def parse_email_html(raw_email_html):
+    # Get the required link from the email body
+    soup = BeautifulSoup(raw_email_html, 'html.parser')
+    # TODO: deface the email itself
+    for link in soup.find_all('a'):
+        if link.string == "MyProximus":
+            portal_link = link.get("href")
+            # Deface the return email, because they deserve it
+            defaced_soup = deface(soup)
+            return str(defaced_soup), portal_link
+    raise Exception("Didn't find the right MyProximus link!")
 
 
 def read_message(service, message):
@@ -133,18 +153,7 @@ def read_message(service, message):
                 has_subject = True
                 # make a directory with the name of the subject
                 folder_name = clean(value)
-                # we will also handle emails with the same subject name
-                folder_counter = 0
-                while os.path.isdir(folder_name):
-                    folder_counter += 1
-                    # we have the same folder name, add a number next to it
-                    if folder_name[-1].isdigit() and folder_name[-2] == "_":
-                        folder_name = f"{folder_name[:-2]}_{folder_counter}"
-                    elif folder_name[-2:].isdigit() and folder_name[-3] == "_":
-                        folder_name = f"{folder_name[:-3]}_{folder_counter}"
-                    else:
-                        folder_name = f"{folder_name}_{folder_counter}"
-                os.mkdir(folder_name)
+                os.makedirs(folder_name, exist_ok=True)
                 print("Subject:", value)
             if name.lower() == "date":
                 # we print the date when the message was sent
@@ -153,8 +162,13 @@ def read_message(service, message):
         # if the email does not have a subject, then make a folder with "email" name
         # since folders are created based on subjects
         if not os.path.isdir(folder_name):
-            os.mkdir(folder_name)
-    parse_parts(service, payload, folder_name, message)
+            os.makedirs(folder_name, exist_ok=True)
+    raw_email_html = parse_email(payload, folder_name)
+    new_email_content, portal_link = parse_email_html(raw_email_html)
+    print(portal_link)
+    with open(os.path.join(folder_name, 'defaced_index.html'), "w") as f:
+        f.write(str(new_email_content))
+
     print("="*50)
 
 
