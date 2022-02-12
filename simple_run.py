@@ -14,8 +14,18 @@ def set_chrome_options() -> None:
     Chrome options for headless browser is enabled.
     """
     chrome_options = Options()
-    # chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--proxy-server='direct://'")
+    chrome_options.add_argument("--proxy-bypass-list=*")
+    chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--ignore-certificate-errors')
     chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument('--lang=nl_BE')
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_prefs = {}
     chrome_options.experimental_options["prefs"] = chrome_prefs
@@ -39,9 +49,10 @@ def wrap(method, exceptions = (NoSuchElementException)):
 
 def navigate_proximus(driver):
     driver.get(email_link)
-    iframe = driver.find_element(By.TAG_NAME, "iframe")
-    driver.switch_to.frame(iframe)
-    wrap(driver.find_element)(By.CLASS_NAME, "call").click()
+    driver.save_screenshot("screenshot.png")
+    # iframe = driver.find_element(By.TAG_NAME, "iframe")
+    # driver.switch_to.frame(iframe)
+    # wrap(driver.find_element)(By.CLASS_NAME, "call").click()
     wrap(driver.find_element)(By.XPATH, three_dots).click()
     wrap(driver.find_element)(By.XPATH, pdf_download).click()
 
@@ -49,10 +60,6 @@ def navigate_proximus(driver):
 if __name__ == "__main__":
     driver = webdriver.Chrome(options=set_chrome_options())
     navigate_proximus(driver=driver)
-    while True:
-        try:
-            pass
-        except KeyboardInterrupt:
-            break
+    time.sleep(10)
     # Do stuff with your driver
     driver.close()

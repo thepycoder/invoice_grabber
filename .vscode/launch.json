@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Scrape Proximus",
+            "type": "python",
+            "request": "launch",
+            "program": "simple_run.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
             "name": "Read Gmail",
             "type": "python",
             "request": "launch",

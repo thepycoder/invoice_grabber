@@ -101,8 +101,8 @@ def deface(soup):
             text_block.string = "Uw nieuwe factuur zit gewoon in bijlage."
         if text_block.string.startswith("U kan deze heel eenvoudig in"):
             text_block.string = "Het is niet meer nodig om die in\n\r"
-        if text_block.string.startswith(" bekijken."):
-            text_block.string = "te bekijken."
+        if "bekijken" in text_block.string:
+            text_block.string = " te bekijken."
         if text_block.string.startswith("Uw Proximus-team"):
             text_block.string = "Uw Corporate Overlords"
     print(soup.prettify())
