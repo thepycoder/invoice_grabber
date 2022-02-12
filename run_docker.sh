@@ -1,0 +1,1 @@
+docker run --rm -it -v `pwd`:/content -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=${DISPLAY} fuck_proximus bash

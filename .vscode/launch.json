@@ -19,6 +19,14 @@
             "program": "read_emails.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/gmail_api"
+        },
+        {
+            "name": "Poller",
+            "type": "python",
+            "request": "launch",
+            "program": "mail_poller.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/production"
         }
     ]
 }

@@ -1,5 +1,9 @@
-selenium:
-    build: .
-    ports:
-        - 4000:4000
-    privileged: true
+version: '3.7'
+
+
+services:
+    selenium:
+        build: .
+        ports:
+            - 4000:4000
+        privileged: true
