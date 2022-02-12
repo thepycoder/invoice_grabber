@@ -44,24 +44,24 @@ def wrap(method, exceptions = (NoSuchElementException)):
     return fn
 
 
-def navigate_proximus(driver, email_link):
+def navigate_proximus(email_link):
+    driver = webdriver.Chrome(options=set_chrome_options())
     driver.get(email_link)
     driver.save_screenshot("screenshot.png")
     # iframe = driver.find_element(By.TAG_NAME, "iframe")
     # driver.switch_to.frame(iframe)
     # wrap(driver.find_element)(By.CLASS_NAME, "call").click()
     invoice_string = wrap(driver.find_element)(By.XPATH, config.INVOICE_NR)
-    invoice_nr = invoice_string.split(' ')[-1]
+    invoice_nr = invoice_string.string.split(' ')[-1]
     wrap(driver.find_element)(By.XPATH, config.THREE_DOTS).click()
     wrap(driver.find_element)(By.XPATH, config.PDF_DOWNLOAD).click()
 
     # Wait for the download to be complete
     time.sleep(10)
+    driver.close()
 
     return invoice_nr
 
 
 if __name__ == "__main__":
-    driver = webdriver.Chrome(options=set_chrome_options())
-    invoice_nr = navigate_proximus(driver=driver, email_link=config.EMAIL_LINK)
-    driver.close()
+    invoice_nr = navigate_proximus(email_link=config.EMAIL_LINK)

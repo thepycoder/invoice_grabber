@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Scrape Proximus",
             "type": "python",
@@ -27,6 +28,14 @@
             "program": "mail_poller.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/production"
-        }
+        },
+        {
+            "name": "Worker",
+            "type": "python",
+            "request": "launch",
+            "program": "worker.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/production"
+        },
     ]
 }

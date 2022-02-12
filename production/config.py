@@ -1,4 +1,7 @@
 # Email
+TO="victor@projectwhy.be"
+FROM="fuck_proximus@projectwhy.be"
+SUBJECT="Your invoice is ready"
 MAIL_SEARCH_QUERY = "(FROM:billing-no-reply@proximus.com AND NOT label:processed)"
 
 # Web selectors

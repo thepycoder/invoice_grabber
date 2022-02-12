@@ -1,3 +1,8 @@
+import base64
+import email.encoders
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
 import os
 import pickle
 # Gmail API utils
@@ -8,6 +13,8 @@ from google.auth.transport.requests import Request
 from base64 import urlsafe_b64decode
 # for parsing the email html content
 from bs4 import BeautifulSoup
+
+import config
 
 
 # Request all access (permission to read/send/receive emails, manage the inbox, and more)
@@ -100,7 +107,33 @@ def parse_email_html(raw_email_html):
 
 
 def send_reply(service, payload, attachment_path):
+    # Set the basic metadata of the email
+    message = MIMEMultipart()
+    message['to'] = config.TO
+    message['from'] = config.FROM
+    message['subject'] = config.SUBJECT
 
+    # The html content of the mail itself
+    msg = MIMEText(payload, 'html')
+    message.attach(msg)
+
+    # Set the attachment, we know this will always be a pdf
+    main_type, sub_type = "application", "pdf"
+    msg = MIMEBase(main_type, sub_type)
+
+    with open(attachment_path, 'rb') as fp:
+        msg.set_payload(fp.read())
+
+    filename = os.path.basename(attachment_path)
+    msg.add_header('Content-Disposition', 'attachment', filename=filename)
+    # email.encoders.encode_base64(msg)
+    message.attach(msg)
+
+    encoded_message = base64.urlsafe_b64encode(message.as_string())
+
+    message = (service.users().messages().send(userId=encoded_message, body=message).execute())
+    print('Message Id: %s' % message['id'])
+    return message
 
 
 def read_message(service, message):

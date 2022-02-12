@@ -3,7 +3,7 @@
 from redis import Redis
 from rq import Queue
 
-import production.email_utils as email_utils
+import email_utils
 import worker
 import config
 

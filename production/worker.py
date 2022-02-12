@@ -20,3 +20,7 @@ def process_email(mail_info):
         return {'SUCCESS': True}
     except Exception as e:
         return {'SUCCESS': False, 'LOG': e}
+
+if __name__ == '__main__':
+    test_mail_info = {'id': '17ee5a5266b916e3', 'threadId': '17ee5a5266b916e3'}
+    print(process_email(test_mail_info))
