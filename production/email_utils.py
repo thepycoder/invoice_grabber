@@ -1,7 +1,7 @@
 import base64
 import email.encoders
 from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
+from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 import os
 import pickle
@@ -108,30 +108,26 @@ def parse_email_html(raw_email_html):
 
 def send_reply(service, payload, attachment_path):
     # Set the basic metadata of the email
-    message = MIMEMultipart()
-    message['to'] = config.TO
-    message['from'] = config.FROM
-    message['subject'] = config.SUBJECT
+    message = MIMEMultipart('mixed')
+    message['To'] = config.TO
+    message['From'] = config.FROM
+    message['Subject'] = config.SUBJECT
 
     # The html content of the mail itself
     msg = MIMEText(payload, 'html')
     message.attach(msg)
 
     # Set the attachment, we know this will always be a pdf
-    main_type, sub_type = "application", "pdf"
-    msg = MIMEBase(main_type, sub_type)
-
     with open(attachment_path, 'rb') as fp:
-        msg.set_payload(fp.read())
+        attachment = MIMEApplication(fp.read(), _subtype="pdf")
 
     filename = os.path.basename(attachment_path)
-    msg.add_header('Content-Disposition', 'attachment', filename=filename)
-    # email.encoders.encode_base64(msg)
-    message.attach(msg)
+    attachment.add_header('Content-Disposition', 'attachment', filename=filename)
+    message.attach(attachment)
 
-    encoded_message = base64.urlsafe_b64encode(message.as_string())
+    encoded_message = {'raw': base64.urlsafe_b64encode(message.as_string().encode()).decode()}
 
-    message = (service.users().messages().send(userId=encoded_message, body=message).execute())
+    message = (service.users().messages().send(userId='me', body=encoded_message).execute())
     print('Message Id: %s' % message['id'])
     return message
 

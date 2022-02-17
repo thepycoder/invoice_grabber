@@ -27,7 +27,7 @@ def set_chrome_options() -> None:
     chrome_prefs = {}
     chrome_options.experimental_options["prefs"] = chrome_prefs
     chrome_prefs["profile.default_content_settings"] = {"images": 2}
-    chrome_prefs["download.default_directory"] = "/content"
+    chrome_prefs["download.default_directory"] = "/tmp"
     return chrome_options
 
 
@@ -52,15 +52,15 @@ def navigate_proximus(email_link):
     # driver.switch_to.frame(iframe)
     # wrap(driver.find_element)(By.CLASS_NAME, "call").click()
     invoice_string = wrap(driver.find_element)(By.XPATH, config.INVOICE_NR)
-    invoice_nr = invoice_string.string.split(' ')[-1]
+    invoice_nr = invoice_string.text.split(" ")[-1]
     wrap(driver.find_element)(By.XPATH, config.THREE_DOTS).click()
     wrap(driver.find_element)(By.XPATH, config.PDF_DOWNLOAD).click()
 
     # Wait for the download to be complete
-    time.sleep(10)
+    time.sleep(60)
     driver.close()
 
-    return invoice_nr
+    return f'/tmp/{invoice_nr}.pdf'
 
 
 if __name__ == "__main__":
