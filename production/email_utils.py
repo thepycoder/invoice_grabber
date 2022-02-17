@@ -19,9 +19,14 @@ import config
 
 # Request all access (permission to read/send/receive emails, manage the inbox, and more)
 SCOPES = ['https://mail.google.com/']
-our_email = 'your_gmail@gmail.com'
 
 def gmail_authenticate():
+    """Authenticate to the gmail api using a json containing the gcp credentials.
+    Save the returned token to a pickle file to be reused.
+
+    Returns:
+        gmail_client: The gmail API client with an active session.
+    """
     creds = None
     # the file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first time
@@ -41,14 +46,17 @@ def gmail_authenticate():
     return build('gmail', 'v1', credentials=creds)
 
 
-def clean(text):
-    # clean text for creating a folder
-    return "".join(c if c.isalnum() else "_" for c in text)
-
-
 def parse_email(payload):
-    """
-    Utility function that parses the content of an email partition
+    """Parse raw email and return the actualy content (payload)
+
+    Args:
+        payload (Message.MessagePart): https://developers.google.com/gmail/api/reference/rest/v1/users.messages#Message.MessagePart
+
+    Raises:
+        Exception: Will raise exception when email content is not html
+
+    Returns:
+        data: email data content as a b64 encoded string
     """
     if payload:
         filename = payload.get("filename")
@@ -62,6 +70,15 @@ def parse_email(payload):
             
 
 def search_messages(service, query):
+    """Search inbox for messages given a search query
+
+    Args:
+        service (_type_): Gmail API client
+        query (str): Gmail search query, follows same pattern as in web UI
+
+    Returns:
+        list: list of Messages that the query returned
+    """
     result = service.users().messages().list(userId='me',q=query).execute()
     messages = [ ]
     if 'messages' in result:
@@ -75,6 +92,14 @@ def search_messages(service, query):
 
 
 def deface(soup):
+    """Deface the original proximus mail content
+
+    Args:
+        soup (Beautifulsoup): soup of the original proximus html mail content
+
+    Returns:
+        Beautifulsoup: Defaced html for the reply email
+    """
     header_image = soup.find_all('img')[0]
     header_image['src'] = "https://i.imgur.com/Y6H2R3o.jpeg"
     text_blocks = soup.find_all('span')
@@ -94,6 +119,17 @@ def deface(soup):
 
 
 def parse_email_html(raw_email_html):
+    """Get the proximus portal link and deface the contents
+
+    Args:
+        raw_email_html (str): String html content of the original email
+
+    Raises:
+        Exception: Raises an exception if the correct portal link is not found.
+
+    Returns:
+        tuple: The defaced html as a Beautifulsoup and the portal link as string 
+    """
     # Get the required link from the email body
     soup = BeautifulSoup(raw_email_html, 'html.parser')
     # TODO: deface the email itself
@@ -107,6 +143,16 @@ def parse_email_html(raw_email_html):
 
 
 def send_reply(service, payload, attachment_path):
+    """Send the reply email given the contents
+
+    Args:
+        service (gmail_client): Gmail API client
+        payload (str): html to use as email body
+        attachment_path (str): path to the pdf to attach
+
+    Returns:
+        Message: The gmail API response Message
+    """
     # Set the basic metadata of the email
     message = MIMEMultipart('mixed')
     message['To'] = config.TO
@@ -127,56 +173,6 @@ def send_reply(service, payload, attachment_path):
 
     encoded_message = {'raw': base64.urlsafe_b64encode(message.as_string().encode()).decode()}
 
-    message = (service.users().messages().send(userId='me', body=encoded_message).execute())
-    print('Message Id: %s' % message['id'])
-    return message
-
-
-def read_message(service, message):
-    """
-    This function takes Gmail API `service` and the given `message_id` and does the following:
-        - Downloads the content of the email
-        - Prints email basic information (To, From, Subject & Date) and plain/text body
-        - Creates a folder for each email based on the subject
-        - Downloads text/html content (if available) and saves it under the folder created as index.html
-        - Downloads any file that is attached to the email and saves it in the folder created
-    """
-    msg = service.users().messages().get(userId='me', id=message['id'], format='full').execute()
-    # parts can be the message body, or attachments
-    payload = msg['payload']
-    headers = payload.get("headers")
-    folder_name = "email"
-    has_subject = False
-    if headers:
-        # this section prints email basic info & creates a folder for the email
-        for header in headers:
-            name = header.get("name")
-            value = header.get("value")
-            if name.lower() == 'from':
-                # we print the From address
-                print("From:", value)
-            if name.lower() == "to":
-                # we print the To address
-                print("To:", value)
-            if name.lower() == "subject":
-                # make our boolean True, the email has "subject"
-                has_subject = True
-                # make a directory with the name of the subject
-                folder_name = clean(value)
-                os.makedirs(folder_name, exist_ok=True)
-                print("Subject:", value)
-            if name.lower() == "date":
-                # we print the date when the message was sent
-                print("Date:", value)
-    if not has_subject:
-        # if the email does not have a subject, then make a folder with "email" name
-        # since folders are created based on subjects
-        if not os.path.isdir(folder_name):
-            os.makedirs(folder_name, exist_ok=True)
-    raw_email_html = parse_email(payload, folder_name)
-    new_email_content, portal_link = parse_email_html(raw_email_html)
-    print(portal_link)
-    with open(os.path.join(folder_name, 'defaced_index.html'), "w") as f:
-        f.write(str(new_email_content))
-
-    print("="*50)
+    reply = (service.users().messages().send(userId='me', body=encoded_message).execute())
+    print('Message Id: %s' % reply['id'])
+    return reply

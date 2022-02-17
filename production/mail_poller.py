@@ -9,6 +9,11 @@ import config
 
 
 def poll_mailbox():
+    """Poll gmail mailbox and search for messages we need to process.
+
+    Returns:
+        list: List of gmail messages to process.
+    """
     # get the Gmail API service
     service = email_utils.gmail_authenticate()
     # get emails that match the query you specify
