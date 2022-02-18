@@ -2,7 +2,7 @@
 TO="victor@projectwhy.be"
 FROM="fuck_proximus@projectwhy.be"
 SUBJECT="Your invoice is ready"
-MAIL_SEARCH_QUERY = "(FROM:billing-no-reply@proximus.com AND NOT label:processed)"
+MAIL_SEARCH_QUERY = "(FROM:billing-no-reply@proximus.com AND NOT label:ProcessedInvoices)"
 
 # Web selectors
 THREE_DOTS = "/html/body/div/div/section/main/my-bill-app/div/my-bill-overview-container/div/section/div[3]/div/div/my-bill-billing-account-container/div/div[2]/my-bill-open-transaction-card/div/my-bill-transaction-card-header/div/my-bill-three-dot-menu/div/div/button"

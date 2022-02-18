@@ -2,6 +2,7 @@
 # Use RQ as our task queue
 from redis import Redis
 from rq import Queue
+import os
 
 import email_utils
 import worker
@@ -27,7 +28,8 @@ def poll_mailbox():
 
 
 if __name__ == '__main__':
-    q = Queue(connection=Redis())
+    q = Queue(connection=Redis(host=os.environ.get('REDIS_HOST', None),
+                               port=os.environ.get('REDIS_PORT', None)))
     mails_to_process = poll_mailbox()
     for mail in mails_to_process:
         q.enqueue(worker.process_email, mail)

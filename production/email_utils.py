@@ -79,7 +79,7 @@ def search_messages(service, query):
     Returns:
         list: list of Messages that the query returned
     """
-    result = service.users().messages().list(userId='me',q=query).execute()
+    result = service.users().messages().list(userId='me', q=query).execute()
     messages = [ ]
     if 'messages' in result:
         messages.extend(result['messages'])
@@ -140,6 +140,22 @@ def parse_email_html(raw_email_html):
             defaced_soup = deface(soup)
             return str(defaced_soup), portal_link
     raise Exception("Didn't find the right MyProximus link!")
+
+
+def mark_processed(service, mail_info):
+    """Mark the incoming email with a specific label to make sure it's not pulled in twice
+
+    Args:
+        service (_type_): Gmail API Client
+        mail_info (dict): Dict with returned info about specific email from API
+    """
+    request_body = {
+        # ProcessedInvoices Label
+        "addLabelIds": ["Label_586225920876536968"],
+        # Remove from inbox and send to above ID "folder"
+        "removeLabelIds": ["INBOX"]
+    }
+    service.users().messages().modify(userId='me', id=mail_info['id'], body=request_body).execute()
 
 
 def send_reply(service, payload, attachment_path):

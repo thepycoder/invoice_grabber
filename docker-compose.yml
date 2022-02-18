@@ -1,9 +1,41 @@
 version: '3.7'
 
-
 services:
-    selenium:
-        build: .
-        ports:
-            - 4000:4000
-        privileged: true
+    redis:
+      hostname: redis
+      image: redis:latest
+      command: --port 6380
+      ports:
+          - "6380:6380"
+    poller:
+      image: compose.local:5000/invoicegrabber:base_image
+      build:
+          context: ./production
+          network: host
+          dockerfile: ./Dockerfile
+      environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6380
+      command: python3 mail_poller.py
+      deploy:
+        mode: replicated
+        replicas: 0
+        labels:
+            - "swarm.cronjob.enable=true"
+            - "swarm.cronjob.schedule=@every 1m"
+            - "swarm.cronjob.skip-running=true"
+        restart_policy:
+            condition: none
+    worker:
+      image: compose.local:5000/invoicegrabber:base_image
+      build:
+          network: host
+          context: ./production
+          dockerfile: ./Dockerfile
+      command: rq worker --with-scheduler --url redis://redis:6380 default
+    dashboard:
+      image: pranavgupta1234/rqmonitor
+      ports:
+        - "8989:8899"
+      environment:
+        - RQ_MONITOR_REDIS_URL=redis://redis:6380
